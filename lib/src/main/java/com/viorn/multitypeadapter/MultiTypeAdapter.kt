@@ -28,7 +28,7 @@ class MultiTypeAdapter : RecyclerView.Adapter<MultiTypeAdapter.MultiTypeViewHold
         abstract fun bindItem(viewHolder: MultiTypeViewHolder, model: T)
     }
 
-    private val rendererMap = LinkedHashMap<KClassifier, Renderer<out AdapterItem>>()
+    private val rendererMap = LinkedHashMap<Class<out AdapterItem>, Renderer<out AdapterItem>>()
 
     private val data = ArrayList<AdapterItem>()
 
@@ -51,18 +51,17 @@ class MultiTypeAdapter : RecyclerView.Adapter<MultiTypeAdapter.MultiTypeViewHold
         diffResult.dispatchUpdatesTo(this);
     }
 
-    fun registerRenderer(renderer: Renderer<out AdapterItem>): MultiTypeAdapter {
-        val classfiler = renderer::class.supertypes.flatMap { it.arguments }.first().type?.classifier!!
-        rendererMap[classfiler] = renderer
+    fun <T: AdapterItem> registerRenderer(cls: Class<T>, renderer: Renderer<out T>): MultiTypeAdapter {
+        rendererMap[cls] = renderer
         return this
     }
 
-    fun registerRenderer(vararg renderer: Renderer<out AdapterItem>): MultiTypeAdapter {
+    /*fun registerRenderer(vararg renderer: Renderer<out AdapterItem>): MultiTypeAdapter {
         renderer.forEach {
             registerRenderer(it)
         }
         return this
-    }
+    }*/
 
     override fun onViewDetachedFromWindow(holder: MultiTypeViewHolder) {
         super.onViewDetachedFromWindow(holder)
@@ -91,9 +90,9 @@ class MultiTypeAdapter : RecyclerView.Adapter<MultiTypeAdapter.MultiTypeViewHold
 
     override fun getItemViewType(position: Int): Int {
         val item = data[position]
-        val ktypes = arrayListOf<KClassifier>(item::class)
-        ktypes.addAll(item::class.supertypes.dropLast(1).mapNotNull { it.classifier })
-        val viewType = rendererMap.keys.indexOfFirst { ktypes.contains(it) }
+        //val ktypes = arrayListOf<KClassifier>(item::class)
+        //ktypes.addAll(item::class.supertypes.dropLast(1).mapNotNull { it.classifier })
+        val viewType = rendererMap.keys.indexOf(item.javaClass)
         if (viewType < 0) {
             throw Throwable("ViewType not found: ${item::class.simpleName}, rendererKeys: ${rendererMap.keys}")
         }
